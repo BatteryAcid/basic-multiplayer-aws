@@ -2,9 +2,14 @@ const AWS = require('aws-sdk');
 const ddb = new AWS.DynamoDB.DocumentClient();
 require('./patch.js');
 let send = undefined;
+const REQUEST_START_OP = "1";
+const THROW_OP = "5";
+const BLOCK_HIT_OP = "9";
+const YOU_WON = "91";
+const YOU_LOST = "92";
+const PLAYING_OP = "11";
 
 function init(event) {
-   console.log(event)
    const apigwManagementApi = new AWS.ApiGatewayManagementApi({
       apiVersion: '2018-11-29',
       endpoint: event.requestContext.domainName + '/' + event.requestContext.stage
@@ -12,33 +17,103 @@ function init(event) {
    send = async (connectionId, data) => {
       await apigwManagementApi.postToConnection({
          ConnectionId: connectionId,
-         Data: `Echo: ${data}`
+         Data: `${data}`
       }).promise();
-
    }
 }
 
 function getConnections() {
    return ddb.scan({
-      TableName: 'chat',
+      TableName: 'game-session',
    }).promise();
+}
 
+function getGameSession(playerId) {
+   return ddb.scan({
+      TableName: 'game-session',
+      FilterExpression: "#p1 = :playerId or #p2 = :playerId",
+      ExpressionAttributeNames: {
+         "#p1": "player1",
+         "#p2": "player2"
+      },
+      ExpressionAttributeValues: {
+         ":playerId": playerId
+      }
+   }).promise();
 }
 
 exports.handler = (event, context, callback) => {
-   console.log("Event received");
+   console.log("Event received: %j", event);
    init(event);
-   let message = JSON.parse(event.body).message;
-   console.log("message:");
-   console.log(message);
 
-   getConnections().then((data) => {
-      console.log(data.Items);
-      data.Items.forEach(function(connection) {
-         console.log("Connection " + connection.connectionid);
-         send(connection.connectionid, message);
-      });
-   });
+   let message = JSON.parse(event.body);
+   console.log("message: %j", message);
+
+   let connectionIdForCurrentRequest = event.requestContext.connectionId;
+   console.log("Current connection id: " + connectionIdForCurrentRequest);
+
+   if (message && message.opcode) {
+
+      switch (message.opcode) {
+         case REQUEST_START_OP:
+            console.log("opcode 1 hit");
+
+            getGameSession(connectionIdForCurrentRequest).then((data) => {
+               console.log("getGameSession: " + data.Items[0].uuid);
+
+               var opcodeStart = "0";
+               if (data.Items[0].gameStatus != "closed" && data.Items[0].player2 != "empty") {
+                  opcodeStart = PLAYING_OP;
+               }
+
+               send(connectionIdForCurrentRequest, '{ "uuid": ' + data.Items[0].uuid + ', "opcode": ' +
+                  opcodeStart + ' }');
+            });
+
+            break;
+
+         case THROW_OP:
+            console.log("opcode 5 hit");
+
+            getGameSession(connectionIdForCurrentRequest).then((data) => {
+               console.log("getGameSession: %j", data.Items[0]);
+
+               var sendToConnectionId = connectionIdForCurrentRequest;
+               if (data.Items[0].player1 == connectionIdForCurrentRequest) {
+                  // request came from player1, just send out to player2
+                  sendToConnectionId = data.Items[0].player2;
+               } else {
+                  // request came from player2, just send out to player1
+                  sendToConnectionId = data.Items[0].player1;
+               }
+
+               console.log("sending throw message to: " + sendToConnectionId);
+               send(sendToConnectionId, "Other player throw");
+            });
+
+            break;
+
+         case BLOCK_HIT_OP: // block hit, send game over
+            console.log("opcode 9 hit");
+
+            getGameSession(connectionIdForCurrentRequest).then((data) => {
+               console.log("getGameSession: %j", data.Items[0]);
+
+               if (data.Items[0].player1 == connectionIdForCurrentRequest) {
+                  // player1 was the winner
+                  send(data.Items[0].player1, '{ "opcode": ' + YOU_WON + ' }');
+                  send(data.Items[0].player2, '{ "opcode": ' + YOU_LOST + ' }');
+               } else {
+                  // player2 was the winner
+                  send(data.Items[0].player1, '{ "opcode": ' + YOU_LOST + ' }');
+                  send(data.Items[0].player2, '{ "opcode": ' + YOU_WON + ' }');
+               }
+            });
+
+         default:
+            // no default case
+      }
+   }
 
    return callback(null, {
       statusCode: 200,
