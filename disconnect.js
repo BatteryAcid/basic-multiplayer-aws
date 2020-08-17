@@ -1,7 +1,7 @@
 const AWS = require('aws-sdk');
 const ddb = new AWS.DynamoDB.DocumentClient();
 require('./patch-disconnect.js');
-
+const TABLE_NAME = "game-session";
 let dissconnectWs = undefined;
 let wsStatus = undefined;
 
@@ -15,7 +15,7 @@ function init(event) {
 
 function getGameSession(playerId) {
     return ddb.scan({
-        TableName: 'game-session',
+        TableName: TABLE_NAME,
         FilterExpression: "#p1 = :playerId or #p2 = :playerId",
         ExpressionAttributeNames: {
             "#p1": "player1",
@@ -29,7 +29,7 @@ function getGameSession(playerId) {
 
 async function closeGame(uuid) {
     ddb.update({
-        TableName: 'game-session',
+        TableName: TABLE_NAME,
         Key: {
             "uuid": uuid
         },

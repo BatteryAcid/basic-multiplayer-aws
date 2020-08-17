@@ -2,6 +2,7 @@ const AWS = require('aws-sdk');
 const ddb = new AWS.DynamoDB.DocumentClient();
 require('./patch.js');
 let send = undefined;
+const TABLE_NAME = "game-session";
 const REQUEST_START_OP = "1";
 const THROW_OP = "5";
 const BLOCK_HIT_OP = "9";
@@ -24,13 +25,13 @@ function init(event) {
 
 function getConnections() {
    return ddb.scan({
-      TableName: 'game-session',
+      TableName: TABLE_NAME,
    }).promise();
 }
 
 function getGameSession(playerId) {
    return ddb.scan({
-      TableName: 'game-session',
+      TableName: TABLE_NAME,
       FilterExpression: "#p1 = :playerId or #p2 = :playerId",
       ExpressionAttributeNames: {
          "#p1": "player1",

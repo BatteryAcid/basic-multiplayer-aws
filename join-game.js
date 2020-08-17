@@ -2,6 +2,7 @@ const AWS = require('aws-sdk');
 const ddb = new AWS.DynamoDB.DocumentClient();
 require('./join-patch.js');
 let send = undefined;
+const TABLE_NAME = "game-session";
 const PLAYING_OP = "11";
 
 function init(event) {
@@ -19,7 +20,7 @@ function init(event) {
 
 function getAvailableGameSession() {
    return ddb.scan({
-      TableName: 'game-session',
+      TableName: TABLE_NAME,
       FilterExpression: "#p2 = :empty and #status <> :closed",
       ExpressionAttributeNames: {
          "#p2": "player2",
@@ -41,7 +42,7 @@ function addConnectionId(connectionId) {
          console.log("No sessions exist, creating session...");
 
          return ddb.put({
-            TableName: 'game-session',
+            TableName: TABLE_NAME,
             Item: {
                uuid: Date.now() + '', // dont do this, use a uuid generation library 
                player1: connectionId,
@@ -53,7 +54,7 @@ function addConnectionId(connectionId) {
          console.log("Session exists, adding player2 to existing session");
 
          return ddb.update({
-            TableName: 'game-session',
+            TableName: TABLE_NAME,
             Key: {
                "uuid": data.Items[0].uuid // just grap the first result, as there should only be one
             },
