@@ -62,6 +62,8 @@ exports.handler = (event, context, callback) => {
             getGameSession(connectionIdForCurrentRequest).then((data) => {
                console.log("getGameSession: " + data.Items[0].uuid);
 
+               // we check for closed to handle an edge case where if player1 joins and immediately quits,
+               // we mark closed to make sure a player2 can't join an abandoned game session
                var opcodeStart = "0";
                if (data.Items[0].gameStatus != "closed" && data.Items[0].player2 != "empty") {
                   opcodeStart = PLAYING_OP;
