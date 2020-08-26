@@ -5,6 +5,10 @@
 * A game session DynamoDb table is used to track the websocket connection ids and game status
 
 
+## Tutorial Video 
+
+* https://youtu.be/X45VYma6738
+
 ### Sources ###
 
 * https://www.freecodecamp.org/news/real-time-applications-using-websockets-with-aws-api-gateway-and-lambda-a5bb493e9452/
