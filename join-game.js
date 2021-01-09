@@ -2,7 +2,7 @@ const AWS = require('aws-sdk');
 const ddb = new AWS.DynamoDB.DocumentClient();
 require('./join-patch.js');
 let send = undefined;
-const TABLE_NAME = "game-session";
+const TABLE_NAME = "game-session-1"; // your dynamodb table name
 const PLAYING_OP = "11";
 
 function init(event) {
@@ -62,11 +62,7 @@ function addConnectionId(connectionId) {
             ExpressionAttributeValues: {
                ":p2": connectionId
             }
-         }).promise().then(() => {
-            // inform player 1 game started.  Cannot yet send message to player2.
-            send(data.Items[0].player1, '{ "uuid": ' + data.Items[0].uuid + ', "opcode": ' + PLAYING_OP +
-               ' }');
-         });
+         }).promise().then(() => {});
       }
    });
 }
