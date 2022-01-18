@@ -1,6 +1,6 @@
 const AWS = require('aws-sdk');
 const ddb = new AWS.DynamoDB.DocumentClient();
-require('./patch.js');
+require('./messaging-patch.js');
 let send = undefined;
 const TABLE_NAME = "game-session";
 const REQUEST_START_OP = "1";

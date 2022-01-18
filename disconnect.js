@@ -1,6 +1,6 @@
 const AWS = require('aws-sdk');
 const ddb = new AWS.DynamoDB.DocumentClient();
-require('./patch-disconnect.js');
+require('./disconnect-patch.js');
 const TABLE_NAME = "game-session";
 let dissconnectWs = undefined;
 let wsStatus = undefined;
