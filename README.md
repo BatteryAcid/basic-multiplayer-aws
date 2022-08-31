@@ -8,6 +8,10 @@
 ## Tutorial Video 
 
 * https://youtu.be/X45VYma6738
+    
+## 👋 Let's talk shop 👇  
+[Discord] https://discord.gg/psjbBDvNBK  
+[Twitter] https://twitter.com/BatteryAcidDev
 
 ### Sources ###
 
